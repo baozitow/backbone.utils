@@ -30,6 +30,7 @@ Backbone.Django.RestCollection = Backbone.Collection.extend({
     }
 });
 
+/*Requiere bootbox para el renderizado*/
 Backbone.Django.RestFormView =  Backbone.View.extend({
     /*
     item es un Model y form_wrapper un div que contenga un form con los campos
@@ -46,12 +47,63 @@ Backbone.Django.RestFormView =  Backbone.View.extend({
         });
         return rendered;
     },
+    /*Errores que devuelve django en formato json, los asignamos a los campos*/
     jsonErrorsToForm: function(json){
         _.each(json, function(v,k){
             var input = this.$('input[name="'+k+'"]');
             input.next('.help-inline').remove();
             input.after('<span class="help-inline">'+v+'</span>');
         });
+    },
+    render : function(item) {
+        var self = this;
+        this.item = item;
+        var rendered = this.template(item);
+        if (item !== undefined){
+            rendered = this.itemToForm(item, rendered);
+        }
+        this.box = bootbox.dialog(rendered, [{
+            "Cancelar": function() {
+                return true;
+            },
+        }, {
+            "Guardar": function() {
+                //Tenemos que poner el elemento de la vista aquí porque
+                //hasta ahora no existe el elemento
+                self.setElement($('.modal-body').children(":first"));
+                self.save();
+                return false;
+            }
+        }]);
+    },
+    save: function(){
+        var self = this;
+        var data = Backbone.Syphon.serialize(this);
+        options = {
+            wait: true,
+            error: function(model, response){
+                if (response.status == 400){
+                    var json = $.parseJSON(response.responseText);
+                    self.jsonErrorsToForm(json);
+                }else{
+                    bootbox.alert("Error "+response.status);
+                    self.box.modal('hide');
+                }
+            },
+            success: function(model, response){
+
+                if (response && response[0]){
+                    model.set("id", response[0].pk);
+                }
+                //TODO Hay que coger el id del objeto creado
+                self.box.modal('hide');
+            }
+        };
+        
+        if (!this.item){
+            this.collection.create(data, options);
+        }else{
+            this.item.save(data, options);
+        }
     }
-    
 });
