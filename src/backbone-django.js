@@ -38,7 +38,7 @@ Backbone.Django.RestFormView =  Backbone.View.extend({
     itemToForm : function(item, form_wrapper){
         var rendered = $(form_wrapper);
         _(item.toJSON()).each(function(value, field){
-            var input = rendered.find('input[name='+field+'],select[name='+field+']');
+            var input = rendered.find('input[name='+field+'],select[name='+field+'], textarea[name='+field+']');
             if (input.length > 0){
                 input.val(value);
             }else if (field == "id"){
@@ -107,3 +107,15 @@ Backbone.Django.RestFormView =  Backbone.View.extend({
         }
     }
 });
+
+//Funciones de utilidades que extienden a underscore
+_.mixin({
+    defaultEmpty: function (value) {
+        if (_.isNull(value) || _.isUndefined(value)){
+            return "";
+        }
+        return value;
+    }
+});
+
+
